@@ -1,13 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion "24.0.1"
+    compileSdk 31
+    buildToolsVersion '36.0.0'
 
     defaultConfig {
         applicationId "com.malta.birdlife.recipesprinter"
         minSdkVersion 19
-        targetSdkVersion 24
         versionCode 1
         versionName "1.0"
 
@@ -19,13 +18,27 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_17
+    }
+    namespace 'com.malta.birdlife'
+    buildFeatures {
+        viewBinding true
+    }
+    dependenciesInfo {
+        includeInApk true
+        includeInBundle true
+    }
+
+
 }
 
+
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:24.2.0'
-    compile 'com.google.android.gms:play-services:7.8+'
-    compile files('libs/btsdk.jar')
-    compile 'com.itextpdf:itextg:5.5.9'
+    implementation libs.support.v13
+    testImplementation libs.junit.v412
+    implementation libs.appcompat.v7
+    implementation libs.play.services
+    implementation files('libs/btsdk.jar')
 }

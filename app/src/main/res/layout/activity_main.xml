@@ -36,6 +36,7 @@
 
         android:layout_height="wrap_content"
 
+        android:focusable="true"
         android:text="@string/btnSearch"
 
         android:visibility="visible"
@@ -60,6 +61,7 @@
 
         android:layout_height="wrap_content"
 
+        android:focusable="true"
         android:text="@string/btnSend"
 
         android:layout_gravity="center_horizontal"

@@ -15,10 +15,6 @@ import android.printservice.PrintService;
 import android.printservice.PrinterDiscoverySession;
 import android.util.Log;
 
-
-import com.itextpdf.text.pdf.PdfReader;
-import com.itextpdf.text.pdf.parser.PdfTextExtractor;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -101,22 +97,11 @@ public class ServizioStampa extends PrintService {
 
 
         FileInputStream fis = new FileInputStream((document.getData().getFileDescriptor()));
-        StringBuffer pdfContent = new StringBuffer("");
-        PdfReader reader;
-        try {
-            reader = new PdfReader(fis);
+        StringBuffer pdfContent = new StringBuffer();
 
-            for (int x = 1; x <= reader.getNumberOfPages(); x++)
-            {
-                pdfContent.append(PdfTextExtractor.getTextFromPage(reader, x));
-            }
-            reader.close();
-            fis.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         Log.d(TAG, pdfContent.toString());
         i.putExtra("document",pdfContent.toString());
+
         printJob.complete();
 
         startActivity(i);

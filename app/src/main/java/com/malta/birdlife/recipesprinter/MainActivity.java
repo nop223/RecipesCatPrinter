@@ -6,9 +6,11 @@ package com.malta.birdlife.recipesprinter;
 /**
  * Google barcode API imports
  **/
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.os.Bundle;
+import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
 
@@ -16,8 +18,11 @@ import android.widget.Button;
  *  MINI Termal Printer API
  */
 
+import java.util.Objects;
 import java.util.Set;
 import android.content.Intent;
+
+import com.malta.birdlife.R;
 import com.zj.btsdk.BluetoothService;
 
 
@@ -27,6 +32,8 @@ import android.os.Message;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 import android.util.Log;
+
+
 
 public class MainActivity extends Activity  {
 
@@ -41,7 +48,7 @@ public class MainActivity extends Activity  {
     Button btnPrint;
     Button btnSearch;
 
-
+    public Handler mHandler;
 
     private static final int REQUEST_ENABLE_BT = 2;
 
@@ -61,42 +68,95 @@ public class MainActivity extends Activity  {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        /**
-         * Google barcode API button
-         **/
+        //LooperThread btLooper = new LooperThread();
+        //btLooper.run();
+        mHandler = new Handler(Objects.requireNonNull(Looper.myLooper())) {
 
-     /* Button btn = (Button) findViewById(R.id.button);
-        btn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void handleMessage(Message msg) {
+
+                String TAG_B = "BLUETOOTH";
+
+                switch (msg.what) {
+
+                    case BluetoothService.MESSAGE_STATE_CHANGE: {
+                        switch (msg.arg1) {
+
+                            case BluetoothService.STATE_CONNECTED: {
+                                Toast.makeText(getApplicationContext(), "Connect successful",
+
+                                        Toast.LENGTH_SHORT).show();
+
+                                btnPrint.setEnabled(true);
+
+                                conn_flag = 1;
+
+                                break;
+                            }
+                            case BluetoothService.STATE_CONNECTING: {
+                                Log.d(TAG_B, "Connecting.....");
+
+                                break;
+                            }
+                            case BluetoothService.STATE_LISTEN: {
+                                Log.d(TAG_B, "Listening...");
+
+                                break;
+                            }
+                            case BluetoothService.STATE_NONE: {
+
+
+                                Log.d(TAG_B, "State none...");
+
+                                break;
+                            }
+                        }
+
+                        break;
+                    }
+                    case BluetoothService.MESSAGE_CONNECTION_LOST: {
+                        Toast.makeText(getApplicationContext(), "Device connection was lost",
+
+                                Toast.LENGTH_SHORT).show();
+
+                        btnPrint.setEnabled(false);
+                        conn_flag = 0;
+                        break;
+                    }
+                    case BluetoothService.MESSAGE_UNABLE_CONNECT: {
+                        Toast.makeText(getApplicationContext(), "Unable to connect device",
+
+                                Toast.LENGTH_SHORT).show();
+
+                        conn_flag = -1;
+
+                        break;
+                    }
+                }
+
             }
-        });
-        TextView txtView = (TextView) findViewById(R.id.txtContent);
-        ImageView myImageView = (ImageView) findViewById(R.id.imgview);
-        Bitmap myBitmap = BitmapFactory.decodeResource(
-                getApplicationContext().getResources(),
-                R.drawable.puppy);
-        myImageView.setImageBitmap(myBitmap);
 
-        BarcodeDetector detector =
-                new BarcodeDetector.Builder(getApplicationContext())
-                        .setBarcodeFormats(Barcode.DATA_MATRIX | Barcode.QR_CODE)
-                        .build();
-        if(!detector.isOperational()){
-            txtView.setText("arrrggg!");
-            return;
+
+        };
+
+        btService = new BluetoothService(this, mHandler);
+
+
+        // se il dispositivo non dispone di ricevitore bluetooth
+        if (btService.isAvailable() == false) {
+
+            Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
+
+            finish();
         }
+        // se il bluetooth non e' attivo
+        else if (btService.isBTopen() == false) {
 
-        /** l'API di Google e' capace di leggere piu' barcodes alla volta
-         *  devo gestire anche questo
-         */
-    /*  Frame frame = new Frame.Builder().setBitmap(myBitmap).build();
-        SparseArray<Barcode> barcodes = detector.detect(frame);
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 
-        Barcode thisCode = barcodes.valueAt(0);
+            startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
 
-        txtView.setText(thisCode.rawValue);
-    */
+        }
 
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
@@ -106,26 +166,9 @@ public class MainActivity extends Activity  {
 
         }
 
-        btService = new BluetoothService(this,mHandler);
+        mConnPaireDev = new ConnectPaireDev();
 
-
-        // se il dispositivo non dispone di ricevitore bluetooth
-        if( btService.isAvailable() == false ){
-
-            Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
-
-            finish();
-            return;
-        }
-         // se il bluetooth non e' attivo
-        else if( btService.isBTopen() == false)
-        {
-
-                Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-
-                startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
-
-        }
+        mConnPaireDev.start();
 
     }
 
@@ -136,37 +179,27 @@ public class MainActivity extends Activity  {
 
         try {
 
-            btnPrint = (Button) this.findViewById(R.id.btnPrint);
+            btnPrint = this.findViewById(R.id.btnPrint);
 
             btnPrint.setOnClickListener(new ClickEvent());
 
             btnPrint.setEnabled(false);
 
-            btnSearch = (Button) this.findViewById(R.id.btnSearch);
+            btnSearch = this.findViewById(R.id.btnSearch);
 
             btnSearch.setOnClickListener(new ClickEvent());
 
-            ProgressBar loading = (ProgressBar) findViewById(R.id.progressBar);
+            ProgressBar loading = findViewById(R.id.progressBar);
 
             loading.setVisibility(View.INVISIBLE);
-
 
         } catch (Exception ex) {
 
             Log.e("MAIN_ACTIVITY",ex.getMessage());
 
         }
+        conn_flag = 0;
 
-        if(pdfDocument==null) {
-            //Toast.makeText(this, "Sono stati passati dei dati!!", Toast.LENGTH_LONG).show();
-            Toast.makeText(this, "Go on Dolicloud facture", Toast.LENGTH_LONG).show();
-            finish();
-        }
-        else {
-            mConnPaireDev = new ConnectPaireDev();
-
-            mConnPaireDev.start();
-        }
     }
 
     @Override
@@ -194,130 +227,20 @@ public class MainActivity extends Activity  {
 
             } else if (v == btnPrint) {
 
-                ProgressBar loading = (ProgressBar) findViewById(R.id.progressBar);
+                ProgressBar loading = findViewById(R.id.progressBar);
 
                 loading.setVisibility(View.VISIBLE);
 
-                /*String msg = "Cantami o Diva del pelide achille l'ira funesta";
+                byte[] sendData = null;
+                //PrintPicEx pg = new PrintPicEx();
+                //pg.initCanvas(384); // ParameterDescription： W:Value 384px for 58seriesprinter ，Value 576px for 80seriesprinter
+                //pg.initPaint();
+                //pg.drawImageResource(384/3,0,getApplicationContext().getResources(),R.drawable.logox);
+                //sendData = pg.printDraw();
+                carPrinterDriver catPrint = new carPrinterDriver();
+                sendData = catPrint.formatMessage(catPrint.FeedPaper, new int[]{10});
+                btService.write(sendData);
 
-
-                btService.sendMessage(msg,"GBK");
-                */
-
-            /*    // Unico comando
-                byte[] cmd = new byte[3];
-                cmd[0] = 0x1b; // ESC
-
-                cmd[1] = 0x21; // !
-
-                cmd[2] |= 0x10; // DLE (Double height mode)
-
-                btService.write(cmd);
-
-                btService.sendMessage("Congratulations!\n", "GBK");
-
-               // cmd[2] &= 0xEF; //  ritorno a zero
-                cmd[2] = 0x00;
-                btService.write(cmd);
-
-                byte[] cmd2 = new byte[4];
-
-                cmd2[0] = 0x10;
-                cmd2[1] = 0x14;
-                cmd2[2] = 0x0;
-
-                btService.sendMessage("Congratulations!\n", "GBK");
-
-           //     btService.sendMessage(bufferDoc.toString(),"GBK");
-                loading.setVisibility(View.INVISIBLE);
-
-                /*
-
-                String msg = "";
-
-                String lang = getString(R.string.strLang);
-
-                printImage();
-
-
-
-                byte[] cmd = new byte[3];
-
-                cmd[0] = 0x1b;
-
-                cmd[1] = 0x21;
-
-                if((lang.compareTo("en")) == 0){
-
-                    cmd[2] |= 0x10;
-
-                    btService.write(cmd);
-
-                    btService.sendMessage("Congratulations!\n", "GBK");
-
-                    cmd[2] &= 0xEF;
-
-                    btService.write(cmd);
-
-                    msg = "  You have sucessfully created communications between your device and our bluetooth printer.\n\n"
-
-                            +"  Shenzhen Zijiang Electronics Co..Ltd is a high-tech enterprise which specializes" +
-
-                            " in R&D,manufacturing,marketing of thermal printers and barcode scanners.\n\n"
-
-                            +"  Please go to our website and see details about our company :\n" +"     http://birdlifemalta.org\n\n";
-
-
-
-                    btService.sendMessage(msg,"GBK");
-                */
-
-                if (pdfDocument != null)
-                {
-
-                    byte[] sendData = null;
-                    PrintPicEx pg = new PrintPicEx();
-                    pg.initCanvas(384); // ParameterDescription： W:Value 384px for 58seriesprinter ，Value 576px for 80seriesprinter
-                    pg.initPaint();
-                    pg.drawImageResource(384/3,0,getApplicationContext().getResources(),R.drawable.logox);
-                    sendData = pg.printDraw();
-                    btService.write(sendData);
-                 //   Log.d("Printer:",""+sendData.length);
-
-                    String array[] = pdfDocument.split("\n");
-
-                    byte[] cmd = new byte[3];
-
-                    cmd[0] = 0x1b;
-
-                    cmd[1] = 0x21;
-
-                    cmd[2] = 0x10;
-
-                    btService.write(cmd);
-
-                    btService.sendMessage(array[0]+"\n", "GBK"); // title
-                    cmd[2] &= 0xEF;
-                  //  cmd[2] = 0x00;
-                    btService.write(cmd);
-                    for(int i = 1;i < array.length;i++)
-                    {
-                        if(i == 5)
-                        {
-                            btService.sendMessage("  \n", "GBK");
-                        }
-                        if(array[i].contains("Label Qty/Price Total"))
-                        {
-                            do {
-                                i++;
-                            }
-                            while(array[i].contains("Total")!=true);
-                        }
-                        btService.sendMessage(array[i], "GBK");
-                    }
-                    btService.sendMessage("  \n", "GBK");
-                 //   btService.sendMessage("  \n", "GBK");
-                }
 
                 loading.setVisibility(View.INVISIBLE);
                 }
@@ -328,82 +251,7 @@ public class MainActivity extends Activity  {
 
 
 
-    private final  Handler mHandler = new Handler()
-    {
 
-        @Override
-        public void handleMessage(Message msg) {
-
-            String TAG_B = "BLUETOOTH";
-
-            switch (msg.what)
-            {
-
-                case BluetoothService.MESSAGE_STATE_CHANGE:
-                {
-                    switch (msg.arg1)
-                    {
-
-                        case BluetoothService.STATE_CONNECTED:
-                        {
-                            Toast.makeText(getApplicationContext(), "Connect successful",
-
-                                    Toast.LENGTH_SHORT).show();
-
-                            btnPrint.setEnabled(true);
-
-                            conn_flag = 1;
-
-                            break;
-                        }
-                        case BluetoothService.STATE_CONNECTING: {
-                            Log.d(TAG_B, "Connecting.....");
-
-                            break;
-                        }
-                        case BluetoothService.STATE_LISTEN: {
-                            Log.d(TAG_B, "Listening...");
-
-                            break;
-                        }
-                        case BluetoothService.STATE_NONE: {
-
-
-                            Log.d(TAG_B, "State none...");
-
-                            break;
-                        }
-                    }
-
-                    break;
-                }
-                case BluetoothService.MESSAGE_CONNECTION_LOST:
-                {
-                    Toast.makeText(getApplicationContext(), "Device connection was lost",
-
-                            Toast.LENGTH_SHORT).show();
-
-                    btnPrint.setEnabled(false);
-
-                    break;
-                }
-                case BluetoothService.MESSAGE_UNABLE_CONNECT:
-                {
-                    Toast.makeText(getApplicationContext(), "Unable to connect device",
-
-                            Toast.LENGTH_SHORT).show();
-
-                    conn_flag = -1;
-
-                    break;
-                }
-            }
-
-        }
-
-
-
-    };
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -416,7 +264,7 @@ public class MainActivity extends Activity  {
                 if (resultCode == Activity.RESULT_OK)
                 {
 
-                  //  Toast.makeText(this, "Bluetooth open successful", Toast.LENGTH_LONG).show();
+                  Toast.makeText(this, "Bluetooth open successful", Toast.LENGTH_LONG).show();
 
                 }
                 else
@@ -424,16 +272,6 @@ public class MainActivity extends Activity  {
                     Toast.makeText(this, "Bluetooth is required for this app", Toast.LENGTH_LONG).show();
                     /* ########################################### */
                     finish();
-                    // gestire eccezioni lo faccio dopo
-                    /*
-                    #################################
-                    ##############################
-                    ###########################
-                    #########################
-                    ######################
-                    ###################
-
-                     */
                 }
 
                 break;
@@ -443,13 +281,8 @@ public class MainActivity extends Activity  {
                 if (resultCode == Activity.RESULT_OK)
                 {
 
-                    String address = data.getExtras()
-
-                            .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
-
+                    String address = Objects.requireNonNull(data.getExtras()).getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
                     btDevice = btService.getDevByMac(address);
-
-
                     btService.connect(btDevice);
 
                 }
@@ -464,7 +297,7 @@ public class MainActivity extends Activity  {
 
     }
 
-
+    public static String selDeviceAddress = null;
 
     public class ConnectPaireDev extends Thread {
 
@@ -472,51 +305,31 @@ public class MainActivity extends Activity  {
 
             while(true)
             {
-                if(btService != null)
-                {
+                try {
+                    if (btService != null) {
+                        while (btService.isBTopen()) {
+                            Set<BluetoothDevice> pairedDevices = btService.getPairedDev();
 
-                    if (btService.isBTopen() == true)
-                    {
-                        break;
-                    }
-                }
+                            if ((!pairedDevices.isEmpty()) && (null != MainActivity.selDeviceAddress)) {
 
-            }
+                                for (BluetoothDevice device : pairedDevices) {
 
-            Set<BluetoothDevice> pairedDevices = btService.getPairedDev();
-
-            if (pairedDevices.size() > 0)
-            {
-
-                for (BluetoothDevice device : pairedDevices)
-                {
-
-                    if(conn_flag == 1) // se connesso
-                    {
-
-                        conn_flag = 0; // resetto
-
-                        break;
-
-                    }
-
-                    while(true)
-                    {
-                        if (conn_flag == -1 || conn_flag == 0) // se impossibile connettersi
-                        {
-                            break;
+                                    if (Objects.equals(device.getAddress(), MainActivity.selDeviceAddress)) {
+                                        if (conn_flag == -1 || conn_flag == 0) // se impossibile connettersi
+                                        {
+                                            btService.connect(device);
+                                            conn_flag = 2;
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
-                    btService.connect(device);
-
-                    conn_flag = 2;
-
+                }catch (Exception ex){
+                    Log.d("DEVICE",ex.toString());
                 }
-
             }
-
         }
-
     }
 
 

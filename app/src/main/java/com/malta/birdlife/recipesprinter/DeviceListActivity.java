@@ -24,6 +24,7 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
+import com.malta.birdlife.R;
 
 public class DeviceListActivity extends AppCompatActivity {
     // Return Intent extra
@@ -45,7 +46,7 @@ public class DeviceListActivity extends AppCompatActivity {
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        toolbar.setNavigationIcon(R.drawable.ic_setting_dark);
+        //toolbar.setNavigationIcon(R.drawable.ic_setting_dark);
         toolbar.setSubtitle("Bluetooth Printer");
 
         ProgressBar progressBar = (ProgressBar) findViewById(R.id.progress_spinner);
@@ -138,7 +139,7 @@ public class DeviceListActivity extends AppCompatActivity {
     }
 
     // The on-click listener for all devices in the ListViews
-    private OnItemClickListener mDeviceClickListener = new OnItemClickListener() {
+    private final OnItemClickListener mDeviceClickListener = new OnItemClickListener() {
         public void onItemClick(AdapterView<?> av, View v, int arg2, long arg3) {
             // Cancel discovery because it's costly and we're about to connect
             mService.cancelDiscovery();
@@ -152,7 +153,8 @@ public class DeviceListActivity extends AppCompatActivity {
                 // Create the result Intent and include the MAC address
                 Intent intent = new Intent();
                 intent.putExtra(EXTRA_DEVICE_ADDRESS, address);
-                Log.d("DEVICEַ", address);
+                MainActivity.selDeviceAddress = address;
+                Log.d("DEVICE", address);
 
                 // Set result and finish this Activity
                 setResult(Activity.RESULT_OK, intent);
