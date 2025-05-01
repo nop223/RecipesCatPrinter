@@ -18,6 +18,9 @@ import android.widget.Button;
  *  MINI Termal Printer API
  */
 
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 import android.content.Intent;
@@ -238,7 +241,25 @@ public class MainActivity extends Activity  {
                 //pg.drawImageResource(384/3,0,getApplicationContext().getResources(),R.drawable.logox);
                 //sendData = pg.printDraw();
                 carPrinterDriver catPrint = new carPrinterDriver();
-                sendData = catPrint.formatMessage(catPrint.FeedPaper, new int[]{10});
+                sendData = catPrint.formatMessage(catPrint.FeedPaper, new int[]{10,00});
+                btService.write(sendData);
+
+
+                sendData = catPrint.formatMessage(catPrint.DrawingMode, new int[]{0});
+                btService.write(sendData);
+                byte[] textByte = catPrint.printText("Hello World");
+                for (int i=0;i<textByte.length / 50;i++){
+
+                    int[] printIntBuffer = new int[50];
+
+                    for (int t = 0; t < 50; t++) {
+                        printIntBuffer[t] = textByte[i*50+t];
+                    }
+                    sendData = catPrint.formatMessage(catPrint.DrawBitmap,printIntBuffer);
+                    btService.write(sendData);
+                }
+
+                sendData = catPrint.formatMessage(catPrint.FeedPaper, new int[]{100,00});
                 btService.write(sendData);
 
 

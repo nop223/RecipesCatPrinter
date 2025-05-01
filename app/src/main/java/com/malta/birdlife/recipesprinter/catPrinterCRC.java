@@ -29,15 +29,14 @@ public class catPrinterCRC {
                 0xfa, 0xfd, 0xf4, 0xf3
     };
 
-    public final int crc8(int[] data){
-        int crc = 0;
-        ByteBuffer byteBuffer = ByteBuffer.allocate(data.length*4 );
-        IntBuffer intBuffer = byteBuffer.asIntBuffer();
-        intBuffer.put(data);
-        for(byte databyte : byteBuffer.array()) {
-            crc = crc8_table[(crc ^ databyte) &0xFF];
+    public final byte crc8(int[] data){
+        byte crc = 0;
+
+        for(int intdata : data) {
+            byte bytedata = (byte)intdata;
+            crc = (byte)crc8_table[(crc ^ bytedata) &0xFF];
         }
-        return (int) (crc & 0xFF);
+        return (byte) (crc & 0xFF);
     }
 
 }

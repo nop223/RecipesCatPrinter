@@ -1,8 +1,12 @@
 package com.malta.birdlife.recipesprinter;
 
 
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.util.Arrays;
 
 public class carPrinterDriver {
@@ -25,11 +29,44 @@ public class carPrinterDriver {
     }
     public byte[] formatMessage(int command, int[] data){
         catPrinterCRC crcCalc = new catPrinterCRC();
-        int[] dataOut = concat(new int[]{0x51, 0x78, command, 0x00, (int) (data.length & 0xFF), 0x00}, data );
-        dataOut = concat(new int[]{crcCalc.crc8(data), 0xFF},dataOut);
-        ByteBuffer byteBuffer = ByteBuffer.allocate(dataOut.length*4 );
-        IntBuffer intBuffer = byteBuffer.asIntBuffer();
-        intBuffer.put(dataOut);
+        int[] dataOut = concat(new int[]{0x51, 0x78, (byte)(command&0xff), 0x00, (int) (data.length & 0xFF), 0x00}, data );
+        dataOut = concat(dataOut,new int[]{crcCalc.crc8(data), 0xFF});
+        ByteBuffer byteBuffer = ByteBuffer.allocate(dataOut.length );
+        for(int inData : dataOut){
+            byteBuffer.put((byte)inData);
+        }
+        return byteBuffer.array();
+    }
+
+    public byte[] printText(String msg){
+        Bitmap bitmap = Bitmap.createBitmap(400, 100, Bitmap.Config.RGB_565);
+        Canvas canvas = new Canvas(bitmap);
+        canvas.drawColor(Color.WHITE);
+        Paint paint = new Paint();
+        paint.setTextAlign(Paint.Align.LEFT);
+        paint.setAntiAlias(true);
+        paint.setTextSize(40);
+        paint.setColor(Color.BLACK);
+
+        canvas.drawText(msg, 0, 90, paint) ;
+        canvas.save();
+        //canvas.restore();
+
+        ByteBuffer byteBuffer =  ByteBuffer.allocate(bitmap.getHeight()*(bitmap.getWidth() / 8));
+        int[] pix = new int[bitmap.getWidth()*bitmap.getHeight()];
+        for (int y=0;y<bitmap.getHeight();y++){
+            for(int x=0;x<bitmap.getWidth();x=x+8){
+                byte pixelData = 0;
+                for(int index=0;index<8;index++){
+                    int pixel = bitmap.getPixel(x+index,y);
+                    pix[y*bitmap.getWidth()+(x+index)] = bitmap.getPixel(x+index,y);
+                    if(pixel!=-1){
+                        pixelData = (byte) (pixelData + (1 << index));
+                    }
+                }
+                byteBuffer.put(pixelData);
+            }
+        }
         return byteBuffer.array();
     }
 
